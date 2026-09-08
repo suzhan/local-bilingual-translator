@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>本地双语翻译设置</title><link rel="stylesheet" href="options.css"></head>
+<body>
+  <main>
+    <header><span>译</span><div><h1>本地双语翻译</h1><p>本地运行 · 隐私优先 · 中英对照</p></div></header>
+    <section>
+      <h2>本地模型</h2>
+      <label>Ollama 地址<input id="endpoint" type="url" spellcheck="false"></label>
+      <label>模型名称<input id="model" type="text" spellcheck="false"><small>推荐极速：qwen3:0.6b；更好质量：qwen3:1.7b</small></label>
+      <div class="actions"><button id="test" class="ghost">测试连接</button><span id="testResult"></span></div>
+    </section>
+    <section>
+      <h2>速度与行为</h2>
+      <div class="grid">
+        <label>每批段落数<input id="batchSize" type="number" min="1" max="32"></label>
+        <label>并发请求数<input id="concurrency" type="number" min="1" max="4"></label>
+      </div>
+      <label class="check"><input id="autoTranslate" type="checkbox">打开英文网页后自动翻译</label>
+      <label>指定网站自动翻译
+        <textarea id="autoDomains" rows="5" placeholder="每行一个域名，例如：&#10;bbc.com&#10;nytimes.com"></textarea>
+        <small>每行一个域名；填写 bbc.com 会同时匹配 www.bbc.com 及其他子域名。</small>
+      </label>
+    </section>
+    <section class="guide">
+      <h2>首次安装本地模型</h2>
+      <ol><li>安装并打开 Ollama。</li><li>在“终端”运行：<code>ollama pull qwen3:0.6b</code></li><li>回到这里点击“测试连接”。</li></ol>
+      <p>若出现 HTTP 403，请复制下面的专属命令到终端执行。它只授权当前这个插件：</p>
+      <div class="command"><code id="originCommand"></code><button id="copyCommand" class="ghost">复制</button></div>
+      <p>执行后，从菜单栏彻底退出 Ollama，再重新打开，然后点击“测试连接”。</p>
+    </section>
+    <div class="savebar"><button id="save">保存设置</button><span id="saveResult"></span></div>
+  </main><script src="options.js"></script>
+</body>
+</html>

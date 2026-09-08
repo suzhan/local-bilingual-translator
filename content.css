@@ -1,0 +1,39 @@
+.local-bilingual-translation {
+  box-sizing: border-box !important;
+  display: block !important;
+  max-width: 100% !important;
+  margin: 0.38em 0 0.8em !important;
+  padding: 0.15em 0 0.15em 0.72em !important;
+  border-left: 2px solid var(--local-translation-border, #2563eb) !important;
+  color: var(--local-translation-color, #263244) !important;
+  background: linear-gradient(90deg, var(--local-translation-bg, rgb(37 99 235 / 0.06)), transparent 72%) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif !important;
+  font-size: 0.94em !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+  line-height: 1.72 !important;
+  letter-spacing: 0.015em !important;
+  text-align: left !important;
+  text-decoration: none !important;
+  white-space: normal !important;
+  opacity: 0;
+  animation: local-bilingual-fade-in 180ms ease-out forwards;
+}
+
+h1 + .local-bilingual-translation,
+h2 + .local-bilingual-translation,
+h3 + .local-bilingual-translation {
+  font-size: 0.78em !important;
+  line-height: 1.55 !important;
+  margin-top: 0.22em !important;
+}
+
+li > .local-bilingual-translation,
+td > .local-bilingual-translation,
+th > .local-bilingual-translation {
+  margin-left: 0 !important;
+}
+
+@keyframes local-bilingual-fade-in {
+  to { opacity: 1; }
+}

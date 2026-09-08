@@ -1,0 +1,5 @@
+# Packaged extension archives are release artifacts, not source files.
+*.zip
+
+# macOS metadata
+.DS_Store
