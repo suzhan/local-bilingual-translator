@@ -1,0 +1,22 @@
+✔ NDJSON byte fragmentation and first paragraph before final event; no preflight (114.778365ms)
+✔ global queue coalesces overlapping tab work via cache; session survives worker restart (287.462766ms)
+✔ abort cancels active fetch and queued work does not reach Ollama (23.981397ms)
+✔ invalid JSON, missing items and token limit are retryable and never cached (42.292907ms)
+✔ HTTP errors and broken streams fail without recursive model retries (11.906989ms)
+✔ duplicate inputs within a batch use one model output and preserve index mapping (6.068034ms)
+✔ remove during generation prevents stale painting and permits immediate restart (159.196487ms)
+✔ invalid batch rolls back provisional DOM before split retry and restores source ownership (130.036259ms)
+✔ source changed during inference is never paired with stale translation (83.858339ms)
+✔ translated list source is stable across rescans; changed text is retranslated (90.360615ms)
+✔ streams complete strings across every split including unicode and escaped quotes (3.063182ms)
+✔ first complete paragraph arrives before entire JSON document (0.202801ms)
+✔ adaptive batches preserve all items with small first batch and bounded chars (0.697636ms)
+✔ cache separates endpoint/model/temperature and preserves punctuation (0.314389ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 818.270026

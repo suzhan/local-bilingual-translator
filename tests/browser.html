@@ -1,0 +1,81 @@
+<!doctype html><meta charset="utf-8"><title>翻译交互回归测试</title>
+<link rel="stylesheet" href="../content.css">
+<style>body{font:16px system-ui;margin:30px;line-height:1.7}#results{white-space:pre-wrap}#fixture{border:1px solid #ccc;padding:16px}button{padding:10px}</style>
+<h1>翻译交互回归测试（模拟模型）</h1><button id="run">运行全部交互测试</button><pre id="results">准备就绪</pre><div id="fixture"></div>
+<script>
+const ev = () => { const listeners = []; return { addListener: fn => listeners.push(fn), emit: (...args) => listeners.forEach(fn => fn(...args)) }; };
+const config = { autoTranslate: false, autoDomains: [], batchSize: 8, concurrency: 1, minLength: 3 };
+let mode = 'normal', requests = 0, aborts = 0;
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+const fixture = document.querySelector('#fixture');
+const messages = ev(); const changed = ev();
+chrome.runtime = { onMessage: messages, sendMessage: async () => {}, connect: () => {
+  requests++;
+  const port = { onDisconnect: ev(), onMessage: ev() }; let closed = false;
+  port.disconnect = () => { if (!closed) { closed = true; aborts++; port.onDisconnect.emit(); } };
+  const send = message => { if (!closed) port.onMessage.emit(message); };
+  port.postMessage = async message => {
+    const thisMode = mode;
+    for (let index = 0; index < message.texts.length; index++) {
+      await wait(40);
+      send({ type: 'item', index, text: '中文：' + message.texts[index], cached: false });
+    }
+    await wait(80);
+    if (thisMode === 'invalid' && message.texts.length > 1) send({ type: 'error', error: '模型格式错误', retryable: true });
+    else if (thisMode === 'offline') send({ type: 'error', error: '无法连接', retryable: false });
+    else send({ type: 'done', metrics: {} });
+  };
+  return port;
+} };
+chrome.storage = { sync: { get: async defaults => ({ ...defaults, ...config }) }, onChanged: changed };
+function command(type) { let response; messages.emit({ type }, {}, value => { response = value; }); return response; }
+function count() { return fixture.querySelectorAll('.local-bilingual-translation').length; }
+function assert(value, description) { if (!value) throw new Error(description); }
+async function until(check, description) { for (let i = 0; i < 150; i++) { if (check()) return; await wait(20); } throw new Error('超时：' + description); }
+function reset(html) { command('REMOVE_TRANSLATION'); fixture.innerHTML = html; mode = 'normal'; requests = 0; }
+async function runTests() {
+  const result = document.querySelector('#results'); result.textContent = '';
+  let passed = 0;
+  const test = async (name, fn) => { try { await fn(); passed++; result.textContent += 'PASS ' + name + '\n'; } catch (e) { result.textContent += 'FAIL ' + name + ': ' + e.message + '\n'; throw e; } };
+  await test('首段在整批结束前显示；相同文本只请求一次', async () => {
+    reset('<p>Hello world one</p><p>Hello world two</p><p>Hello world one</p>'); command('START_TRANSLATION');
+    await until(() => count() >= 2, '首段'); assert(command('GET_STATUS').running, '不应等到整批完成');
+    await until(() => !command('GET_STATUS').running, '完成'); assert(count() === 3, '三处译文'); assert(requests === 1, '去重为两项首批');
+  });
+  await test('取消后旧结果不回填；可立即再次翻译', async () => {
+    reset('<p>Cancel these words</p><p>New run words</p>'); command('START_TRANSLATION'); await wait(10);
+    command('REMOVE_TRANSLATION'); assert(!command('GET_STATUS').running, '立即空闲');
+    await wait(200); assert(count() === 0, '取消后应保持空白');
+    command('START_TRANSLATION'); await until(() => !command('GET_STATUS').running, '重启'); assert(count() === 2, '重启成功');
+  });
+  await test('格式错误撤销临时译文并拆分重试，不重复插入', async () => {
+    reset('<p>First sentence here</p><p>Second sentence here</p>'); mode = 'invalid'; command('START_TRANSLATION');
+    await until(() => !command('GET_STATUS').running, '拆分重试'); assert(count() === 2, '数量正确'); assert(requests === 3, '仅二分一次');
+  });
+  await test('离线错误不递归重试，也不保留临时译文', async () => {
+    reset('<p>First failure here</p><p>Second failure here</p>'); mode = 'offline'; command('START_TRANSLATION');
+    await until(() => !command('GET_STATUS').running, '离线完成'); await wait(20);
+    assert(count() === 0, '撤销译文'); assert(requests === 1, '只有一次请求'); assert(command('GET_STATUS').lastStatus.state === 'error', '错误状态');
+  });
+  await test('推理期间原文变化，不插入过期译文', async () => {
+    reset('<p id="changing">Original sentence here</p>'); command('START_TRANSLATION'); await wait(10);
+    fixture.querySelector('#changing').textContent = 'Changed sentence here';
+    await until(() => !command('GET_STATUS').running, '原文变更'); assert(count() === 0, '无过期译文');
+  });
+  await test('列表内部插入后再次扫描不会重复翻译', async () => {
+    reset('<ul><li>Keep list words</li></ul>'); command('START_TRANSLATION');
+    await until(() => !command('GET_STATUS').running, '列表'); command('START_TRANSLATION');
+    await until(() => !command('GET_STATUS').running, '再次扫描'); assert(count() === 1, '列表单份'); assert(requests === 1, '没有额外请求');
+  });
+  await test('全局自动翻译能处理动态内容；移除后保持暂停', async () => {
+    reset('<p>Automatic initial words</p>'); config.autoTranslate = true; changed.emit({ autoTranslate: { newValue: true } }, 'sync');
+    await until(() => count() === 1 && !command('GET_STATUS').running, '自动首批');
+    fixture.insertAdjacentHTML('beforeend', '<p>Dynamic extra words</p>');
+    await until(() => count() === 2 && !command('GET_STATUS').running, '动态内容');
+    command('REMOVE_TRANSLATION'); fixture.insertAdjacentHTML('beforeend', '<p>Do not translate now</p>');
+    await wait(600); assert(count() === 0, '移除后不重启'); config.autoTranslate = false; changed.emit({ autoTranslate: { newValue: false } }, 'sync');
+  });
+  result.textContent += `全部 ${passed} 项通过。此测试使用模拟响应，不代表 Ollama 推理性能。`;
+}
+document.querySelector('#run').onclick = () => runTests().catch(console.error);
+</script><script src="../translation-core.js"></script><script src="../content.js"></script>

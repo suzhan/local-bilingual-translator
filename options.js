@@ -1,4 +1,8 @@
-const DEFAULTS = { endpoint: "http://127.0.0.1:11434", model: "qwen3:0.6b", batchSize: 16, concurrency: 1, autoTranslate: false, autoDomains: [] };
+const DEFAULTS = {
+  endpoint: "http://127.0.0.1:11434", model: "qwen3:0.6b", batchSize: 8,
+  concurrency: 1, autoTranslate: false, autoDomains: [], disabledDomains: [], noAutoDomains: []
+};
+const DOMAIN_LIST_IDS = new Set(["autoDomains", "disabledDomains", "noAutoDomains"]);
 const ids = Object.keys(DEFAULTS);
 const originCommand = `launchctl setenv OLLAMA_ORIGINS "chrome-extension://${chrome.runtime.id}"`;
 document.querySelector("#originCommand").textContent = originCommand;
@@ -12,7 +16,7 @@ async function restore() {
   ids.forEach((id) => {
     const element = document.getElementById(id);
     if (element.type === "checkbox") element.checked = values[id];
-    else if (id === "autoDomains") element.value = values[id].join("\n");
+    else if (DOMAIN_LIST_IDS.has(id)) element.value = (values[id] || []).join("\n");
     else element.value = values[id];
   });
 }
@@ -21,10 +25,12 @@ document.querySelector("#save").addEventListener("click", async () => {
   const values = {
     endpoint: document.querySelector("#endpoint").value.trim().replace(/\/+$/, ""),
     model: document.querySelector("#model").value.trim(),
-    batchSize: Math.min(32, Math.max(1, Number(document.querySelector("#batchSize").value))),
-    concurrency: Math.min(4, Math.max(1, Number(document.querySelector("#concurrency").value))),
+    batchSize: Math.min(32, Math.max(1, (Number(document.querySelector("#batchSize").value) || 8))),
+    concurrency: Math.min(4, Math.max(1, (Number(document.querySelector("#concurrency").value) || 1))),
     autoTranslate: document.querySelector("#autoTranslate").checked,
-    autoDomains: parseDomains(document.querySelector("#autoDomains").value)
+    autoDomains: parseDomains(document.querySelector("#autoDomains").value),
+    disabledDomains: parseDomains(document.querySelector("#disabledDomains").value),
+    noAutoDomains: parseDomains(document.querySelector("#noAutoDomains").value)
   };
   await chrome.storage.sync.set(values);
   flash("saveResult", "设置已保存", true);

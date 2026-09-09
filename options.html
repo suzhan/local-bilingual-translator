@@ -16,10 +16,19 @@
         <label>每批段落数<input id="batchSize" type="number" min="1" max="32"></label>
         <label>并发请求数<input id="concurrency" type="number" min="1" max="4"></label>
       </div>
+      <p>默认 8 段、并发 1。首批最多 2 段，后续按文本长度自动缩小批次；每段生成后立即显示。并发为所有标签页共享上限，增大不一定更快。模型使用后保留 30 分钟。</p>
       <label class="check"><input id="autoTranslate" type="checkbox">打开英文网页后自动翻译</label>
       <label>指定网站自动翻译
         <textarea id="autoDomains" rows="5" placeholder="每行一个域名，例如：&#10;bbc.com&#10;nytimes.com"></textarea>
         <small>每行一个域名；填写 bbc.com 会同时匹配 www.bbc.com 及其他子域名。</small>
+      </label>
+      <label>不使用插件的网址
+        <textarea id="disabledDomains" rows="4" placeholder="这些网站完全禁用插件，每行一个域名"></textarea>
+        <small>禁止自动翻译和手动翻译，优先级最高。</small>
+      </label>
+      <label>不自动翻译的网址
+        <textarea id="noAutoDomains" rows="4" placeholder="这些网站不自动翻译，每行一个域名"></textarea>
+        <small>仍然可以在插件弹窗中手动点击“翻译当前网页”。</small>
       </label>
     </section>
     <section class="guide">
